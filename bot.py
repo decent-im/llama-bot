@@ -69,8 +69,17 @@ class EchoBot(slixmpp.ClientXMPP):
         if msg['type'] not in ('chat', 'normal'):
             return
 
-        self.send(msg.reply("Thanks for sending\n%(body)s" % msg))
+        total = "Thanks for sending\n%(body)s" % msg
+        reply = msg.reply(total)
+        reply_msg_id = reply['id']
+        self.send(reply)
         await asyncio.sleep(1)
+        # # update to test
+        # total = "Wait here while I compose the reply"
+        # reply = msg.reply(total)
+        # reply['replace']['id'] = reply_msg_id
+        # self.send(reply)
+        # await asyncio.sleep(1)
         #self.send_message(mto=msg['from'].bare, mbody="send_message", mtype='chat')
 
         request_data = \
@@ -108,16 +117,17 @@ class EchoBot(slixmpp.ClientXMPP):
             if line.startswith(b"data: "):
                 chunk = json.loads(line[6:]).get("content") 
                 if chunk:
+                    total = total + chunk
                     logging.debug(chunk)
-                    self.send(msg.reply(chunk))
+                    reply = msg.reply(total)
+                    reply['replace']['id'] = reply_msg_id
+                    reply.send()
                     await asyncio.sleep(1)
-                total = total + chunk
         logging.debug(total)
-        self.send(msg.reply(total))
+        logging.debug("FINISHED")
         self.send(msg.reply('FINISHED'))
 
 # TODO
-# with every token, update ("correct") the only one message.
 # "is typing"
 # move to better named JID, accept subscription requests
 # fix my firewall to allow people to connect to it
