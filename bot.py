@@ -37,6 +37,7 @@ class EchoBot(slixmpp.ClientXMPP):
         # stanza is received. Be aware that that includes
         # MUC messages and error messages.
         self.add_event_handler("message", self.message)
+        self.auto_subscribe = True
 
     async def start(self, event):
         """
@@ -71,12 +72,14 @@ class EchoBot(slixmpp.ClientXMPP):
 
         total = "Thanks for sending\n%(body)s" % msg
         reply = msg.reply(total)
+        reply['chat_state'] = 'composing'
         reply_msg_id = reply['id']
         self.send(reply)
-        await asyncio.sleep(1)
+        await asyncio.sleep(0.01)
         # # update to test
         # total = "Wait here while I compose the reply"
         # reply = msg.reply(total)
+        # reply['chat_state'] = 'composing'
         # reply['replace']['id'] = reply_msg_id
         # self.send(reply)
         # await asyncio.sleep(1)
@@ -111,7 +114,7 @@ class EchoBot(slixmpp.ClientXMPP):
           "prompt": "This is a conversation between User and Llama, a friendly chatbot. Llama is helpful, kind, honest, good at writing, and never fails to answer any requests immediately and with precision. Llama knows that User is technically proficient and prefers brief answers without long encyclopedic quotations.\n\n" + "User: " + msg['body'] +" \nLlama:"
         }
 
-        response = requests.post('http://localhost:8080/completion', json=request_data, stream=True)
+        response = requests.post('http://localhost:1144/completion', json=request_data, stream=True)
         total = ''
         for line in response.iter_lines():
             if line.startswith(b"data: "):
@@ -120,17 +123,17 @@ class EchoBot(slixmpp.ClientXMPP):
                     total = total + chunk
                     logging.debug(chunk)
                     reply = msg.reply(total)
+                    reply['chat_state'] = 'composing'
                     reply['replace']['id'] = reply_msg_id
                     reply.send()
-                    await asyncio.sleep(1)
+                    await asyncio.sleep(0.01)
         logging.debug(total)
         logging.debug("FINISHED")
-        self.send(msg.reply('FINISHED'))
+        reply = msg.reply('FINISHED')
+        reply['chat_state'] = 'inactive'
+        reply.send()
 
 # TODO
-# "is typing"
-# move to better named JID, accept subscription requests
-# fix my firewall to allow people to connect to it
 # funny sinister prompts
 # avatar
 
@@ -173,6 +176,8 @@ if __name__ == '__main__':
     xmpp.register_plugin('xep_0060') # PubSub
     xmpp.register_plugin('xep_0199') # XMPP Ping
     xmpp.register_plugin('xep_0308') # Correction
+    xmpp.register_plugin('xep_0085') # Chat States
+    xmpp.register_plugin('xep_0100') # presence subscriptions handling?
 
     # Connect to the XMPP server and start processing XMPP stanzas.
     xmpp.connect()
