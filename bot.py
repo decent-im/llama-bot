@@ -70,7 +70,7 @@ class EchoBot(slixmpp.ClientXMPP):
         if msg['type'] not in ('chat', 'normal'):
             return
 
-        total = "Thanks for sending\n%(body)s" % msg
+        total = "Wait a minute, the reply will appear here. Please don't send new messages while you wait."
         reply = msg.reply(total)
         reply['chat_state'] = 'composing'
         reply_msg_id = reply['id']
